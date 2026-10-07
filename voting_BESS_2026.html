@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pemilihan Calon Ketua & Wakil Ketua BESS 2026</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#eef2ff;color:#182238}
+header{background:linear-gradient(135deg,#243bff,#702cff);color:white;text-align:center;padding:26px 15px}h1{margin:0 0 7px;font-size:27px}header p{margin:0;opacity:.9}
+main{max-width:950px;margin:auto;padding:17px 14px}.tabs{display:flex;gap:8px;margin-bottom:16px}.tabs button{flex:1;border:0;border-radius:13px;padding:14px;font-weight:800;background:#dfe4ff;color:#29355e}.tabs .on{background:#243bff;color:#fff}
+.panel{display:none}.panel.on{display:block}.notice{background:#fff7d7;border-left:5px solid #f2bd00;padding:13px 15px;border-radius:10px;margin-bottom:16px}.status{padding:11px 14px;border-radius:10px;background:#e8f8ef;color:#126c3a;margin-bottom:16px}.bad{background:#ffe8e8;color:#a00000}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.card,.result,.total,.login,.formbox{background:#fff;border-radius:18px;padding:20px;box-shadow:0 7px 24px #17203312}.num{color:#6673a3;font-weight:800}.candidate{font-size:22px;font-weight:850;margin:5px 0}.vice{color:#626c82;margin-bottom:18px}
+button.vote,.loginbtn{width:100%;border:0;border-radius:12px;padding:14px;background:#243bff;color:#fff;font-size:16px;font-weight:850}.vote:disabled{background:#aeb5c9}
+.success{display:none;background:#e8f8ef;color:#096b39;border-radius:13px;padding:15px;font-weight:750;margin-bottom:16px}.login{max-width:440px;margin:auto}input{width:100%;padding:13px;border:1px solid #c9cedc;border-radius:10px;margin:8px 0 12px;font-size:16px}.formbox{max-width:600px;margin:0 auto 16px}.formbox h2{margin-top:0}
+.result{margin:12px 0}.row{display:flex;justify-content:space-between;gap:10px;font-weight:800}.barbg{height:17px;background:#e5e8f0;border-radius:20px;margin:10px 0;overflow:hidden}.bar{height:100%;background:#243bff;border-radius:20px}.small{font-size:13px;color:#697187}.actions{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0}.actions button{border:0;border-radius:11px;padding:12px 15px;font-weight:750;background:#e1e5f5}.danger{background:#ffe0e0!important;color:#a00000}.hidden{display:none!important}.voterinfo{background:#eef3ff;padding:13px;border-radius:12px;margin-bottom:16px}.tablewrap{overflow:auto;background:#fff;border-radius:14px;box-shadow:0 7px 24px #17203312}.vtable{width:100%;border-collapse:collapse;min-width:620px}.vtable th,.vtable td{padding:11px;border-bottom:1px solid #edf0f6;text-align:left}.vtable th{background:#f5f7fc}.pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#e8f8ef;color:#096b39;font-weight:750}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>🗳️ Pemilihan Calon Ketua & Wakil Ketua BESS 2026</h1><p>Gunakan hak suara dengan bijak. Satu pemilih, satu suara.</p></header>
+<main>
+<div class="tabs"><button id="tv" class="on" onclick="tab('vote')">🗳️ Pencoblosan</button><button id="tm" onclick="tab('mod')">🔐 Moderator</button></div>
+
+<section id="vote" class="panel on">
+<div class="notice">⚠️ Masukkan <b>nama lengkap dan kelas</b> terlebih dahulu. Setelah suara tercatat, identitas tersebut ditandai sudah menggunakan hak suara. Refresh browser tidak membuatmu bisa mencoblos lagi.</div>
+<div id="status" class="status">Menghubungkan ke database...</div>
+<div id="identityBox" class="formbox">
+<h2>🧑‍🎓 Data Pemilih</h2>
+<p>Data ini digunakan panitia untuk mencatat siapa yang sudah mencoblos.</p>
+<label>Nama lengkap</label><input id="name" autocomplete="name" placeholder="Contoh: Andika Pratama">
+<label>Kelas</label><input id="className" autocomplete="off" placeholder="Contoh: X TKRO 1">
+<button class="loginbtn" onclick="startVoting()">Lanjut ke Pencoblosan</button>
+</div>
+<div id="voterInfo" class="voterinfo hidden"></div>
+<div id="success" class="success">✅ Suaramu sudah berhasil tercatat. Hak suara untuk data ini sudah digunakan.</div>
+<div id="cards" class="grid hidden"></div>
+</section>
+
+<section id="mod" class="panel">
+<div id="login" class="login"><h2>🔐 Akses Moderator</h2><p>Masukkan PIN moderator.</p><input id="pin" type="password" inputmode="numeric" placeholder="PIN moderator"><button class="loginbtn" onclick="login()">Masuk</button></div>
+<div id="dash" class="hidden"><div class="notice"><b>Dashboard Moderator BESS</b><br>Hasil dan daftar pemilih berasal dari database online.</div><div id="results"></div><div class="actions"><button onclick="results()">🔄 Refresh</button><button onclick="auto()">⏱️ <span id="at">Auto-refresh OFF</span></button><button onclick="csv()">📥 Ekspor CSV</button><button class="danger" onclick="resetVoting()">🗑️ Reset Voting</button></div><h2>📋 Data Pencoblos BESS</h2><div id="votersTable"></div></div>
+</section>
+</main>
+
+<script>
+const FIREBASE_DB_URL="https://voting-calon-ketua-bes-dan-mpk-default-rtdb.asia-southeast1.firebasedatabase.app";
+const PIN="0812";
+const C=[{"id": 1, "k": "Yulan", "w": "Andika"}, {"id": 2, "k": "Violla", "w": "Zahira"}];
+let timer=null,currentVoter=null;
+const configured=()=>FIREBASE_DB_URL.startsWith("https://")&&!FIREBASE_DB_URL.includes("GANTI_DENGAN");
+const url=p=>FIREBASE_DB_URL.replace(/\/$/,"")+"/"+p+".json";
+const identityKey=()=>localStorage.getItem("bess_2026_voter_key_2026");
+async function get(p){let r=await fetch(url(p),{cache:"no-store"});if(!r.ok)throw Error("Database tidak dapat diakses");return r.json()}
+async function put(p,d){let r=await fetch(url(p),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok)throw Error("Gagal menyimpan");return r.json()}
+async function sha256(s){let b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+function clean(s){return s.trim().replace(/\s+/g," ")}
+async function makeKey(name,cls){return await sha256((clean(name)+"|"+clean(cls)).toLowerCase())}
+function drawCards(){let lock=!!identityKey()&&!!currentVoter?.voted;document.getElementById("cards").innerHTML=C.map(x=>`<div class="card"><div class="num">PASLON ${x.id}</div><div class="candidate">${x.k}</div><div class="vice">Waketos: ${x.w}</div><button class="vote" ${lock?"disabled":""} onclick="vote(${x.id})">${lock?"Sudah Mencoblos":"COBLOS PASLON "+x.id}</button></div>`).join("")}
+async function loadExisting(){let key=identityKey();if(!key)return;try{let v=await get("bess_2026/voters/"+key);if(v){currentVoter={...v,key};showVoter();}}catch(e){}}
+function showVoter(){document.getElementById("identityBox").classList.add("hidden");document.getElementById("voterInfo").classList.remove("hidden");document.getElementById("voterInfo").innerHTML=`<b>Data pemilih:</b><br>${escapeHtml(currentVoter.name)}<br>Kelas: ${escapeHtml(currentVoter.className)}${currentVoter.voted?'<br><span class="pill">SUDAH MENGGUNAKAN HAK SUARA</span>':''}`;document.getElementById("cards").classList.toggle("hidden",!currentVoter.voted);document.getElementById("success").style.display=currentVoter.voted?"block":"none";if(!currentVoter.voted)document.getElementById("cards").classList.remove("hidden");drawCards()}
+async function startVoting(){if(!configured())return alert("URL Firebase belum diisi.");let name=clean(document.getElementById("name").value),cls=clean(document.getElementById("className").value);if(name.length<3||cls.length<1)return alert("Isi nama lengkap dan kelas terlebih dahulu.");try{let key=await makeKey(name,cls),existing=await get("bess_2026/voters/"+key);if(existing){localStorage.setItem("bess_2026_voter_key_2026",key);currentVoter={...existing,key};showVoter();return}currentVoter={key,name,className:cls,voted:false,createdAt:new Date().toISOString()};await put("bess_2026/voters/"+key,currentVoter);localStorage.setItem("bess_2026_voter_key_2026",key);showVoter()}catch(e){alert("❌ Gagal menyimpan data pemilih: "+e.message)}}
+async function vote(id){if(!currentVoter||currentVoter.voted)return;let c=C.find(x=>x.id===id);if(!confirm("Yakin memilih PASLON "+id+"?\n"+c.k+" & "+c.w+"\n\nPilihan tidak dapat diganti."))return;try{let existing=await get("bess_2026/voters/"+currentVoter.key);if(!existing)return alert("Data pemilih tidak ditemukan.");if(existing.voted)return showVoter();existing.voted=true;existing.candidateId=id;existing.candidateName=c.k;existing.viceName=c.w;existing.votedAt=new Date().toISOString();await put("bess_2026/voters/"+currentVoter.key,existing);currentVoter=existing;await rebuildCounts();showVoter();alert("✅ Suara berhasil dicatat! Pilihanmu sudah selesai dan refresh tidak akan menghapusnya.")}catch(e){alert("❌ Gagal mencatat suara: "+e.message)}}
+async function rebuildCounts(){let voters=await get("bess_2026/voters")||{};let v={"1":0,"2":0};Object.values(voters).forEach(x=>{if(x&&x.voted&&v[String(x.candidateId)]!==undefined)v[String(x.candidateId)]++});await put("bess_2026/votes",v)}
+function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
+async function connect(){let s=document.getElementById("status");if(!configured()){s.className="status bad";s.innerHTML="⚠️ Isi URL Firebase pada <b>FIREBASE_DB_URL</b> di file HTML.";return}try{await get("bess_2026/voters");s.className="status";s.innerHTML="🟢 Terhubung ke database voting.";await loadExisting()}catch(e){s.className="status bad";s.innerHTML="🔴 Database belum bisa diakses. Periksa URL dan Rules Firebase."}}
+function tab(x){document.getElementById("vote").classList.toggle("on",x==="vote");document.getElementById("mod").classList.toggle("on",x==="mod");document.getElementById("tv").classList.toggle("on",x==="vote");document.getElementById("tm").classList.toggle("on",x==="mod")}
+function login(){if(document.getElementById("pin").value===PIN){document.getElementById("login").classList.add("hidden");document.getElementById("dash").classList.remove("hidden");results()}else alert("❌ PIN salah")}
+async function results(){try{let voters=await get("bess_2026/voters")||{};let v={"1":0,"2":0};Object.values(voters).forEach(x=>{if(x&&x.voted&&v[String(x.candidateId)]!==undefined)v[String(x.candidateId)]++});let t=C.reduce((sum,x)=>sum+(Number(v[String(x.id)])||0),0);document.getElementById("results").innerHTML=C.map(x=>{let n=v[x.id],p=t?(n/t*100).toFixed(1):"0.0";return `<div class="result"><div class="row"><span>Paslon ${x.id} • ${x.k}</span><span>${n} suara</span></div><div class="barbg"><div class="bar" style="width:${p}%"></div></div><div class="small">${p}% dari ${t} suara</div></div>`}).join("")+`<div class="total"><div class="row"><span>TOTAL SUARA</span><span>${t}</span></div></div>`;let rows=Object.entries(voters).filter(([k,x])=>x&&x.name).map(([k,x],i)=>`<tr><td>${i+1}</td><td>${escapeHtml(x.name)}</td><td>${escapeHtml(x.className)}</td><td>${x.voted?`Paslon ${x.candidateId}`:'Belum mencoblos'}</td><td>${x.votedAt?new Date(x.votedAt).toLocaleString('id-ID'):'-'}</td></tr>`).join("");document.getElementById("votersTable").innerHTML=`<div class="tablewrap"><table class="vtable"><thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Pilihan</th><th>Waktu</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Belum ada data.</td></tr>'}</tbody></table></div>`}catch(e){alert("❌ Gagal mengambil hasil: "+e.message)}}
+function auto(){if(timer){clearInterval(timer);timer=null;document.getElementById("at").textContent="Auto-refresh OFF"}else{results();timer=setInterval(results,5000);document.getElementById("at").textContent="Auto-refresh ON"}}
+async function resetVoting(){if(!confirm("Hapus SEMUA data pemilih dan suara? Ini tidak dapat dibatalkan."))return;if(prompt("Masukkan PIN moderator:")!==PIN)return alert("PIN salah.");try{await put("bess_2026/voters",null);await put("bess_2026/votes",{"1":0,"2":0});localStorage.removeItem("bess_2026_voter_key_2026");results();alert("✅ Voting direset.")}catch(e){alert("❌ Gagal reset: "+e.message)}}
+async function csv(){try{let voters=await get("bess_2026/voters")||{},s="Nama,Kelas,Paslon,Ketua,Wakil,Waktu\n";Object.values(voters).forEach(x=>{if(x&&x.name)s+=`"${String(x.name).replace(/"/g,'""')}","${String(x.className).replace(/"/g,'""')}",${x.voted?x.candidateId:'Belum mencoblos'},"${x.candidateName||''}","${x.viceName||''}","${x.votedAt||''}"\n`});let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+s],{type:"text/csv"}));a.download="data-pencoblos-bess_2026-2026.csv";a.click()}catch(e){alert("❌ Gagal ekspor")}}
+connect();
+</script>
+</body></html>
